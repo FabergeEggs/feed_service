@@ -1,4 +1,4 @@
-name: CI/CD for auth service
+name: CI/CD for feed service
 
 on:
   push:
@@ -15,7 +15,7 @@ on:
       - develop
 
 env:
-  IMAGE_NAME: faberge-auth-service
+  IMAGE_NAME: faberge-feed-service
 
 jobs:
   ruff:
