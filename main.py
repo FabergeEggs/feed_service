@@ -1,12 +1,11 @@
 from fastapi import FastAPI
 import uvicorn
 
-import sys
-from pathlib import Path
-sys.path.append(str(Path(__file__).parent.parent))
-
-
 app = FastAPI()
 
+def main():
+    uvicorn.run(app, host="0.0.0.0", port=8000)
+
+
 if __name__ == "__main__":
-    uvicorn.run("main:app", reload=True)
+    main()
