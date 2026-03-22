@@ -17,3 +17,59 @@ dev = [
     "pytest>=9.0.2",
     "ruff>=0.15.6",
 ]
+
+[tool.uv.workspace]
+members = [
+    "sklad_django_part",
+    "sklad_fastapi_part",
+    "sklad_flask_part"
+]
+
+[tool.ruff]
+exclude = [
+    ".git",
+    ".venv",
+    "__pycache__",
+    "build",
+    "dist",
+    "migrations"
+]
+
+target-version = "py313"
+
+ignore = [
+    "E501",
+    "B008"
+]
+
+[tool.mypy]
+python_version = "3.13"
+
+pretty = true
+show_error_codes = true
+show_error_context = true
+show_column_numbers = true
+
+exclude = [
+    "build",
+    "dist",
+    ".venv",
+    "tests/test_.*\\.py"
+]
+
+plugins = [
+    "pydantic.mypy"
+]
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+disallow_untyped_defs = false
+check_untyped_defs = false
+
+[[tool.mypy.overrides]]
+module = "migrations.*"
+ignore_errors = true
+
+[tool.bandit]
+exclude_dirs = ["tests", "docs", "migrations"]
+skips = ["B101", "B311"]
