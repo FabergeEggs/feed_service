@@ -3,19 +3,32 @@ defmodule FeedServiceWeb.Router do
 
   pipeline :api do
     plug :accepts, ["json"]
+    plug FeedServiceWeb.Plugs.UserContext
   end
 
-  scope "/api", FeedServiceWeb do
+  pipeline :authenticated do
+    plug FeedServiceWeb.Plugs.RequireUser
+  end
+
+  scope "/api/v1", FeedServiceWeb.Api.V1 do
     pipe_through :api
+
+    get "/health", HealthController, :show
+
+    scope "/" do
+      pipe_through :authenticated
+
+      get "/feed", FeedController, :index
+      get "/feed/projects/:project_id", FeedController, :project_feed
+
+      get "/subscriptions", SubscriptionController, :index
+      post "/subscriptions", SubscriptionController, :create
+      delete "/subscriptions/:id", SubscriptionController, :delete
+    end
   end
 
   # Enable LiveDashboard in development
   if Application.compile_env(:feed_service, :dev_routes) do
-    # If you want to use the LiveDashboard in production, you should put
-    # it behind authentication and allow only admins to access it.
-    # If your application does not have an admins-only section yet,
-    # you can use Plug.BasicAuth to set up some basic authentication
-    # as long as you are also using SSL (which you should anyway).
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do
