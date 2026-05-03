@@ -30,6 +30,23 @@ config :logger, :default_formatter,
 # Use Jason for JSON parsing in Phoenix
 config :phoenix, :json_library, Jason
 
+# Compile-time defaults for runtime-loaded settings. Real values are
+# overridden in `dev.exs` / `test.exs` and `runtime.exs` (env vars).
+config :feed_service, :redis, url: nil
+
+config :feed_service, :kafka,
+  brokers: [],
+  group_id: "feed-service",
+  topics: %{
+    project_events: "project-events",
+    response_added: "response_service.response.add",
+    response_deleted: "response_service.response.delete",
+    profile_changed: "profile_service.profile.changed"
+  }
+
+config :feed_service, :media_client, base_url: nil, token: nil
+config :feed_service, :project_client, base_url: nil
+
 # Import environment specific config. This must remain at the bottom
 # of this file so it overrides the configuration defined above.
 import_config "#{config_env()}.exs"

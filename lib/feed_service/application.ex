@@ -12,9 +12,7 @@ defmodule FeedService.Application do
       FeedService.Repo,
       {DNSCluster, query: Application.get_env(:feed_service, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: FeedService.PubSub},
-      # Start a worker by calling: FeedService.Worker.start_link(arg)
-      # {FeedService.Worker, arg},
-      # Start to serve requests, typically the last entry
+      {Redix, {redis_url!(), [name: FeedService.Redix]}},
       FeedServiceWeb.Endpoint
     ]
 
@@ -30,5 +28,12 @@ defmodule FeedService.Application do
   def config_change(changed, _new, removed) do
     FeedServiceWeb.Endpoint.config_change(changed, removed)
     :ok
+  end
+
+  defp redis_url! do
+    case Application.get_env(:feed_service, :redis, [])[:url] do
+      url when is_binary(url) and url != "" -> url
+      _ -> raise "redis url is not configured (set REDIS_URL or :feed_service, :redis, url: ...)"
+    end
   end
 end
