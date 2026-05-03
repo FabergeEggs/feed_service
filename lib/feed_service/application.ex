@@ -13,6 +13,7 @@ defmodule FeedService.Application do
       {DNSCluster, query: Application.get_env(:feed_service, :dns_cluster_query) || :ignore},
       {Phoenix.PubSub, name: FeedService.PubSub},
       {Redix, {redis_url!(), [name: FeedService.Redix]}},
+      FeedService.Events.Broadway,
       FeedServiceWeb.Endpoint
     ]
 
