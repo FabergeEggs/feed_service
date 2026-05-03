@@ -57,6 +57,7 @@ config :feed_service, :redis, url: "redis://localhost:6379/0"
 config :feed_service, :kafka, brokers: [{"localhost", 9092}]
 config :feed_service, :media_client, base_url: "http://localhost:4001", token: "dev-feed-token"
 config :feed_service, :project_client, base_url: "http://localhost:8000"
+config :feed_service, :profile_client, base_url: "http://localhost:8003"
 
 # Do not include metadata nor timestamps in development logs
 config :logger, :default_formatter, format: "[$level] $message\n"

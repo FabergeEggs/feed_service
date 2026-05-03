@@ -55,6 +55,10 @@ if project_url = System.get_env("PROJECT_SERVICE_URL") do
   config :feed_service, :project_client, base_url: project_url
 end
 
+if profile_url = System.get_env("PROFILE_SERVICE_URL") do
+  config :feed_service, :profile_client, base_url: profile_url
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
