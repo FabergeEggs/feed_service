@@ -1,33 +1,45 @@
 defmodule FeedServiceWeb.Api.V1.FeedController do
   use FeedServiceWeb, :controller
 
-  alias FeedService.Feed
+  alias FeedService.{Cache, Feed}
 
-  @doc "GET /api/v1/feed — current user's personal timeline."
+  @cache_ttl 30
+
   def index(conn, params) do
     user_id = conn.assigns.current_user.id
     opts = build_opts(params)
+    key = "feed:user:#{user_id}:cur:#{opts[:cursor] || "_"}:lim:#{opts[:limit] || "_"}"
 
-    case Feed.list_user_timeline(user_id, opts) do
-      {:ok, page} ->
-        render(conn, :page, page: page)
-
-      {:error, :invalid_cursor} ->
-        send_error(conn, 400, "invalid_cursor")
-    end
+    serve_page(conn, key, fn -> Feed.list_user_timeline(user_id, opts) end)
   end
 
-  @doc "GET /api/v1/feed/projects/:project_id — timeline for one project."
   def project_feed(conn, %{"project_id" => project_id} = params) do
     case Ecto.UUID.cast(project_id) do
       {:ok, _} ->
-        case Feed.list_project_feed(project_id, build_opts(params)) do
-          {:ok, page} -> render(conn, :page, page: page)
-          {:error, :invalid_cursor} -> send_error(conn, 400, "invalid_cursor")
-        end
+        opts = build_opts(params)
+        key = "feed:project:#{project_id}:cur:#{opts[:cursor] || "_"}:lim:#{opts[:limit] || "_"}"
+
+        serve_page(conn, key, fn -> Feed.list_project_feed(project_id, opts) end)
 
       :error ->
         send_error(conn, 400, "invalid_project_id")
+    end
+  end
+
+  defp serve_page(conn, cache_key, fetch_fn) do
+    case Cache.get(cache_key) do
+      {:ok, page} ->
+        render(conn, :page, page: page)
+
+      _ ->
+        case fetch_fn.() do
+          {:ok, page} ->
+            Cache.put(cache_key, page, @cache_ttl)
+            render(conn, :page, page: page)
+
+          {:error, :invalid_cursor} ->
+            send_error(conn, 400, "invalid_cursor")
+        end
     end
   end
 

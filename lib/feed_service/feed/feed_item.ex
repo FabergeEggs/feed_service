@@ -1,12 +1,4 @@
 defmodule FeedService.Feed.FeedItem do
-  @moduledoc """
-  A projection of a single upstream event into the unified timeline.
-
-  Created from RedPanda messages by `FeedService.Feed.Projector` and
-  written to Postgres by event handlers. `event_id` enforces idempotency:
-  the same Kafka delivery cannot produce two rows.
-  """
-
   use Ecto.Schema
 
   import Ecto.Changeset
@@ -40,12 +32,6 @@ defmodule FeedService.Feed.FeedItem do
   @optional ~w(project_id actor_id actor_name actor_avatar_url label
                short_description description media_ids payload)a
 
-  @doc """
-  Builds a changeset for inserting/updating a feed item.
-
-  Use with `on_conflict: {:replace, ...}, conflict_target: :event_id`
-  for idempotent upserts driven by Kafka redeliveries.
-  """
   def changeset(item, attrs) do
     item
     |> cast(attrs, @required ++ @optional)
@@ -57,9 +43,6 @@ defmodule FeedService.Feed.FeedItem do
     |> unique_constraint(:event_id)
   end
 
-  @doc "Allowed source_type values."
   def source_types, do: @source_types
-
-  @doc "Allowed verb values."
   def verbs, do: @verbs
 end

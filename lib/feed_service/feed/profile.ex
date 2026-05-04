@@ -1,13 +1,5 @@
 defmodule FeedService.Feed.Profile do
-  @moduledoc """
-  Denormalized cache of upstream profile data.
-
-  Used to enrich `actor_name` / `actor_avatar_url` on incoming events
-  without an HTTP round-trip to profile_service. Updated by
-  `ProfileHandler` on `profile_service.profile.changed` events; missing
-  rows are tolerated (`actor_*` fields then come straight from the
-  source event payload).
-  """
+  @moduledoc "Denormalized cache of upstream profile data (name, avatar)."
 
   use Ecto.Schema
 

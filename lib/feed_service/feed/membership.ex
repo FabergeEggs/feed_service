@@ -1,10 +1,4 @@
 defmodule FeedService.Feed.Membership do
-  @moduledoc """
-  Mirror of `project_user_connection` from project_service. Implicit
-  feed visibility: members see their projects without an explicit
-  subscription. Synced via Kafka events `member.added` / `member.removed`.
-  """
-
   use Ecto.Schema
 
   import Ecto.Changeset

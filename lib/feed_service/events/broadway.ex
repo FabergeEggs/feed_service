@@ -1,20 +1,7 @@
 defmodule FeedService.Events.Broadway do
   @moduledoc """
-  Pipeline потребления событий из RedPanda/Kafka.
-
-  Под капотом — Broadway с adapter-ом BroadwayKafka.Producer (тот в свою
-  очередь использует Erlang-клиент `:brod`). Pipeline:
-
-      Kafka topic → Producer → Processor (handle_message/3) → ack
-
-  Маршрутизация: `Schema.decode/2` превращает сырое сообщение в struct,
-  затем перебираются handlers — первый, кто отвечает `handles?(event)`,
-  получает событие на обработку.
-
-  Если `KAFKA_BROKERS` пустой (по умолчанию в dev) — `start_link/1`
-  возвращает `:ignore`, и supervisor спокойно стартует остальное
-  приложение без подписки на Kafka. Это позволяет работать с REST
-  даже когда RedPanda не поднята.
+  Kafka consumer pipeline. Returns `:ignore` from `start_link/1` when
+  no brokers are configured, so REST keeps working without RedPanda.
   """
 
   use Broadway
@@ -32,13 +19,8 @@ defmodule FeedService.Events.Broadway do
 
   @handlers [ProjectHandler, ResponseHandler, ProfileHandler]
 
-  # Топики, на которые мы подписаны. Имена соответствуют тому, что
-  # реально публикуют upstream-сервисы сегодня (см. memory:
-  # eggs_event_contracts).
-  #
-  # TODO(upstream) profile_service: добавить
-  # "profile_service.profile.changed" в список, когда producer появится
-  # в profile_service. См. ProfileHandler.
+  # TODO(upstream) profile_service: add "profile_service.profile.changed"
+  # once the producer exists in profile_service.
   @topics [
     "project.created",
     "project.updated",
@@ -56,7 +38,7 @@ defmodule FeedService.Events.Broadway do
 
     case config[:brokers] do
       [] ->
-        Logger.info("Broadway: KAFKA_BROKERS пуст, pipeline не стартует")
+        Logger.info("Broadway: no Kafka brokers configured, pipeline disabled")
         :ignore
 
       brokers when is_list(brokers) ->
@@ -69,17 +51,11 @@ defmodule FeedService.Events.Broadway do
                  hosts: brokers,
                  group_id: config[:group_id],
                  topics: @topics,
-                 # `:latest` — стартуем с конца лога; новый consumer
-                 # не пытается переварить весь history. Для backfill
-                 # переключим на `:earliest`.
                  offset_reset_policy: :latest
                ]},
             concurrency: 1
           ],
-          processors: [
-            default: [concurrency: 4]
-          ],
-          partition_by: &partition/1
+          processors: [default: [concurrency: 4]]
         )
     end
   end
@@ -95,20 +71,14 @@ defmodule FeedService.Events.Broadway do
             msg
 
           {:error, reason} ->
-            Logger.error(
-              "feed_service handler error: topic=#{topic} reason=#{inspect(reason)}"
-            )
-
+            Logger.error("handler error: topic=#{topic} reason=#{inspect(reason)}")
             Message.failed(msg, "handler_error: #{inspect(reason)}")
         end
 
       {:error, reason} ->
-        # Нечитаемое сообщение НЕ помечаем как failed — иначе вечный
-        # retry заблокирует партицию. Логируем и подтверждаем (skip).
-        Logger.warning(
-          "feed_service decode failed: topic=#{topic} reason=#{inspect(reason)}"
-        )
-
+        # Skip poison messages (ack without retry) — otherwise one bad
+        # payload blocks the partition forever.
+        Logger.warning("decode failed: topic=#{topic} reason=#{inspect(reason)}")
         msg
     end
   end
@@ -118,13 +88,4 @@ defmodule FeedService.Events.Broadway do
       if handler.handles?(event), do: handler.handle(event)
     end)
   end
-
-  # Сохраняем порядок per-entity внутри одного процессора.
-  # project_service использует UUID сущности как Kafka-key
-  # (см. project_service/kafka_producer.py: `key=str(post.post_id)`).
-  defp partition(%Message{metadata: %{key: key}}) when is_binary(key) and key != "" do
-    :erlang.phash2(key)
-  end
-
-  defp partition(_msg), do: 0
 end

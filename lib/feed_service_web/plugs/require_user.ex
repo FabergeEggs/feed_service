@@ -1,9 +1,4 @@
 defmodule FeedServiceWeb.Plugs.RequireUser do
-  @moduledoc """
-  Halts the request with 401 when `conn.assigns.current_user` is missing.
-  Must run after `UserContext`.
-  """
-
   @behaviour Plug
 
   import Plug.Conn

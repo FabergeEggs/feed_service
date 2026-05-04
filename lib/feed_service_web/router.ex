@@ -27,7 +27,6 @@ defmodule FeedServiceWeb.Router do
     end
   end
 
-  # Enable LiveDashboard in development
   if Application.compile_env(:feed_service, :dev_routes) do
     import Phoenix.LiveDashboard.Router
 

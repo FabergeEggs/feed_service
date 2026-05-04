@@ -1,34 +1,12 @@
 defmodule FeedService.Clients.MediaClient do
-  @moduledoc """
-  HTTP-клиент для media_service. Используется для обогащения ленты
-  метаданными вложений (`feed_items.media_ids`).
-
-  Авторизация — S2S через заголовок `X-Service-Token`. Токен и
-  base_url берутся из `Application.get_env(:feed_service, :media_client)`
-  (см. `config/config.exs` + `runtime.exs`).
-  """
+  @moduledoc "S2S client for media_service. `X-Service-Token` from `:media_client` config."
 
   require Logger
 
-  @doc """
-  Получает один asset по id.
-
-  Возвращает:
-    * `{:ok, map()}`        — JSON-тело ответа
-    * `{:error, :not_found}` — 404
-    * `{:error, :not_configured}` — base_url не задан
-    * `{:error, term()}`    — сеть/HTTP/что-то ещё
-  """
   def get_asset(asset_id) when is_binary(asset_id) do
     request(:get, "/api/v1/assets/#{asset_id}")
   end
 
-  @doc """
-  Параллельно запрашивает несколько asset-ов. Возвращает map id → результат.
-
-  Каждый id получает свой `{:ok, map}` либо `{:error, _}` независимо —
-  одна ошибка не валит весь батч.
-  """
   def batch_get_assets(ids) when is_list(ids) do
     ids
     |> Task.async_stream(&{&1, get_asset(&1)},

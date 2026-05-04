@@ -1,19 +1,8 @@
 defmodule FeedService.Feed.Projector do
-  @moduledoc """
-  Pure transformation: `Schema` event → action for the `Feed` context.
-
-  No DB I/O happens here — the projector returns one of:
-
-    * `{:upsert, attrs}`    — pass `attrs` to `Feed.upsert_item/1`
-    * `{:delete, source_type, source_id}` — pass to `Feed.delete_by_source/2`
-
-  This separation keeps the projector trivially testable and lets
-  handlers decide how to combine multiple actions in a transaction.
-  """
+  @moduledoc "Pure transform: `Schema` event → `{:upsert, attrs} | {:delete, source_type, source_id}`."
 
   alias FeedService.Events.Schema
 
-  @doc "Projects one event into a feed action."
   @spec project(Schema.t()) ::
           {:upsert, map()} | {:delete, String.t(), String.t()}
   def project(%Schema{kind: kind, attrs: attrs, raw: raw}) do
@@ -25,8 +14,6 @@ defmodule FeedService.Feed.Projector do
         {:delete, source_type, attrs.source_id}
     end
   end
-
-  # ── classify event kind into action + source_type/verb ─────────────
 
   defp classify(:project_created), do: {:upsert, "project", "created"}
   defp classify(:project_updated), do: {:upsert, "project", "updated"}
@@ -56,9 +43,6 @@ defmodule FeedService.Feed.Projector do
     }
   end
 
-  # Deterministic event_id for idempotency. Same inputs → same id, so
-  # Kafka redeliveries hit the unique index in `feed_items.event_id` and
-  # we get `{:ok, :duplicate}` from `Feed.upsert_item/1`.
   defp build_event_id(source_type, verb, %{source_id: id, occurred_at: at}) do
     "#{source_type}:#{id}:#{verb}:#{DateTime.to_iso8601(at)}"
   end

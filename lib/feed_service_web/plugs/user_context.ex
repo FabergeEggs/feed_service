@@ -1,13 +1,5 @@
 defmodule FeedServiceWeb.Plugs.UserContext do
-  @moduledoc """
-  Reads `X-User-Id`, `X-Username`, `X-User-Roles` request headers (set by
-  the API gateway after JWT validation) and attaches the user to
-  `conn.assigns.current_user`.
-
-  Soft plug: missing headers don't fail the request — public endpoints
-  like `/health` keep working. Use `RequireUser` afterwards for
-  authenticated routes.
-  """
+  @moduledoc "Reads X-User-* headers (set by gateway) into `conn.assigns.current_user`."
 
   @behaviour Plug
 

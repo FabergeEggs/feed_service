@@ -1,7 +1,6 @@
 defmodule FeedServiceWeb.Api.V1.FeedJSON do
   alias FeedService.Feed.FeedItem
 
-  @doc "Renders one page of feed items, with cursor-pagination metadata."
   def page(%{page: %{items: items, next_cursor: next_cursor}}) do
     %{
       items: Enum.map(items, &item/1),

@@ -1,10 +1,4 @@
 defmodule FeedService.Feed.Subscription do
-  @moduledoc """
-  A user's subscription to a feed source — a project, another user, or
-  a tag. Combined with `Membership` it builds the WHERE-clause that
-  filters `feed_items` for the user's personal timeline.
-  """
-
   use Ecto.Schema
 
   import Ecto.Changeset
