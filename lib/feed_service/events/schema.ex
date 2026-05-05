@@ -29,24 +29,16 @@ defmodule FeedService.Events.Schema do
     end
   end
 
-  # TODO(upstream) project_service: rename to past-tense topics
-  # (post.create → post.created, task.create → task.created, etc) in
-  # `kafka_producer.py` and align with response_service prefix expectation.
   defp decode_topic("project.created", p), do: build(:project_created, p, &project_attrs/1)
   defp decode_topic("project.updated", p), do: build(:project_updated, p, &project_attrs/1)
 
-  defp decode_topic("post.create", p), do: build(:post_created, p, &post_attrs/1)
-  defp decode_topic("post.update", p), do: build(:post_updated, p, &post_attrs/1)
-  defp decode_topic("post.delete", p), do: build(:post_deleted, p, &delete_attrs("post_id", &1))
+  defp decode_topic("post.created", p), do: build(:post_created, p, &post_attrs/1)
+  defp decode_topic("post.updated", p), do: build(:post_updated, p, &post_attrs/1)
+  defp decode_topic("post.deleted", p), do: build(:post_deleted, p, &delete_attrs("post_id", &1))
 
-  # TODO(upstream) project_service: `send_update_task` writes to
-  # `task.create` instead of `task.update` (kafka_producer.py:123).
-  # Until fixed we disambiguate by payload `type`.
-  defp decode_topic("task.create", %{"type" => "task.update"} = p),
-    do: build(:task_updated, p, &task_attrs/1)
-
-  defp decode_topic("task.create", p), do: build(:task_created, p, &task_attrs/1)
-  defp decode_topic("task.delete", p), do: build(:task_deleted, p, &delete_attrs("task_id", &1))
+  defp decode_topic("task.created", p), do: build(:task_created, p, &task_attrs/1)
+  defp decode_topic("task.updated", p), do: build(:task_updated, p, &task_attrs/1)
+  defp decode_topic("task.deleted", p), do: build(:task_deleted, p, &delete_attrs("task_id", &1))
 
   defp decode_topic("response_service.response.add", p),
     do: build(:response_added, p, &response_attrs/1)

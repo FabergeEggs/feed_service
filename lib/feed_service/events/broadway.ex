@@ -24,11 +24,12 @@ defmodule FeedService.Events.Broadway do
   @topics [
     "project.created",
     "project.updated",
-    "post.create",
-    "post.update",
-    "post.delete",
-    "task.create",
-    "task.delete",
+    "post.created",
+    "post.updated",
+    "post.deleted",
+    "task.created",
+    "task.updated",
+    "task.deleted",
     "response_service.response.add",
     "response_service.response.delete"
   ]
