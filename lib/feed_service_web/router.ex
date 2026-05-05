@@ -14,6 +14,7 @@ defmodule FeedServiceWeb.Router do
     pipe_through :api
 
     get "/health", HealthController, :show
+    get "/feed/global", FeedController, :global_feed
 
     scope "/" do
       pipe_through :authenticated

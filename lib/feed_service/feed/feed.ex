@@ -53,6 +53,25 @@ defmodule FeedService.Feed do
     )
   end
 
+  def list_global_feed(opts \\ []) do
+    limit = clamp_limit(opts[:limit])
+
+    case Cursor.decode(opts[:cursor]) do
+      :error ->
+        {:error, :invalid_cursor}
+
+      {:ok, point} ->
+        items =
+          FeedItem
+          |> apply_cursor(point)
+          |> order_by([i], desc: i.occurred_at, desc: i.id)
+          |> limit(^limit)
+          |> Repo.all()
+
+        {:ok, %{items: items, next_cursor: next_cursor(items, limit)}}
+    end
+  end
+
   def list_project_feed(project_id, opts \\ []) do
     limit = clamp_limit(opts[:limit])
 

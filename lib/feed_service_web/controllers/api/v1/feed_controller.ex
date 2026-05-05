@@ -14,6 +14,12 @@ defmodule FeedServiceWeb.Api.V1.FeedController do
     serve_page(conn, key, fn -> Feed.list_user_timeline(user_id, opts) end)
   end
 
+  def global_feed(conn, params) do
+    opts = build_opts(params)
+    key = "feed:global:cur:#{opts[:cursor] || "_"}:lim:#{opts[:limit] || "_"}"
+    serve_page(conn, key, fn -> Feed.list_global_feed(opts) end)
+  end
+
   def project_feed(conn, %{"project_id" => project_id} = params) do
     case Ecto.UUID.cast(project_id) do
       {:ok, _} ->
