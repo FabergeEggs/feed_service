@@ -26,5 +26,6 @@ config :feed_service, :kafka, brokers: [], group_id: "feed-service"
 config :feed_service, :media_client, base_url: nil, token: nil
 config :feed_service, :project_client, base_url: nil
 config :feed_service, :profile_client, base_url: nil
+config :feed_service, :profile_client_impl, FeedService.Clients.ProfileClient
 
 import_config "#{config_env()}.exs"

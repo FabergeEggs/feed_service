@@ -29,3 +29,9 @@ config :phoenix, :plug_init_mode, :runtime
 # Sort query params output of verified routes for robust url comparisons
 config :phoenix,
   sort_verified_routes_query_params: true
+
+# Mox-generated stub for the ProfileClient behaviour.
+config :feed_service, :profile_client_impl, FeedService.Clients.ProfileClientMock
+
+# Disable Redis-backed cache — tests stub it through Mox or just don't set it.
+config :feed_service, :redis, url: "redis://localhost:6379/15"

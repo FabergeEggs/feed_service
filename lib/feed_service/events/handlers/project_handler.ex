@@ -1,7 +1,7 @@
 defmodule FeedService.Events.Handlers.ProjectHandler do
   alias FeedService.Events.Schema
   alias FeedService.Feed
-  alias FeedService.Feed.Projector
+  alias FeedService.Feed.{ProfileEnricher, Projector}
 
   @kinds ~w(project_created project_updated
             post_created post_updated post_deleted
@@ -15,6 +15,7 @@ defmodule FeedService.Events.Handlers.ProjectHandler do
   def handle(%Schema{kind: kind} = event) when kind in @kinds do
     case Projector.project(event) do
       {:upsert, attrs} ->
+        attrs = ProfileEnricher.enrich_actor(attrs)
         with {:ok, _item} <- Feed.upsert_item(attrs), do: :ok
 
       {:delete, source_type, source_id} ->

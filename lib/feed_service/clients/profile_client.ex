@@ -7,10 +7,13 @@ defmodule FeedService.Clients.ProfileClient do
   `/profile/{id}`). Same S2S sentinel-headers caveat as ProjectClient.
   """
 
+  @behaviour FeedService.Clients.ProfileClient.Behaviour
+
   require Logger
 
   @profile_path "/{id}"
 
+  @impl true
   def get_profile(user_id) when is_binary(user_id) do
     request(:get, String.replace(@profile_path, "{id}", user_id))
   end
