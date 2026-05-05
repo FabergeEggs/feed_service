@@ -65,6 +65,11 @@ USER app
 COPY --from=builder --chown=app:app /app/_build/prod/rel/feed_service ./
 
 USER root
+
+RUN apt-get update -qq && apt-get install -y --no-install-recommends dos2unix \
+ && find /app/bin -type f -exec dos2unix {} \; \
+ && apt-get remove -y dos2unix && apt-get autoremove -y && rm -rf /var/lib/apt/lists/*
+
 RUN chmod +x /app/bin/migrate /app/bin/server /app/bin/entrypoint
 USER app
 
