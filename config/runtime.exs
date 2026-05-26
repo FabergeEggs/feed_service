@@ -41,6 +41,10 @@ if profile_url = System.get_env("PROFILE_SERVICE_URL") do
   config :feed_service, :profile_client, base_url: profile_url
 end
 
+if log_level = System.get_env("LOG_LEVEL") do
+  config :logger, level: String.to_atom(log_level)
+end
+
 if config_env() == :prod do
   database_url =
     System.get_env("DATABASE_URL") ||
