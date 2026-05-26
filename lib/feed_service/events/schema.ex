@@ -17,6 +17,7 @@ defmodule FeedService.Events.Schema do
           | :task_deleted
           | :response_added
           | :response_deleted
+          | :profile_changed
 
   @type t :: %__MODULE__{kind: kind(), attrs: map(), raw: map()}
 
@@ -45,6 +46,11 @@ defmodule FeedService.Events.Schema do
 
   defp decode_topic("response_service.response.delete", p),
     do: build(:response_deleted, p, &response_attrs/1)
+
+  # profile_service publishes both user.profile.updated {user_id, name} and
+  # user.avatar.updated {user_id, avatar_link} to the same topic.
+  # Both map to :profile_changed — handler does the partial-update logic.
+  defp decode_topic("user-events", p), do: build(:profile_changed, p, &profile_attrs/1)
 
   defp decode_topic(_, _), do: {:error, :unknown_topic}
 
@@ -89,8 +95,6 @@ defmodule FeedService.Events.Schema do
 
   defp post_attrs(_), do: {:error, :missing_fields}
 
-  # TODO(upstream) project_service: payload `answer_count` is a string
-  # (kafka_producer.py:115), should be int.
   defp task_attrs(%{"task_id" => tid, "project_id" => proj, "creator_id" => creator_id} = p) do
     {:ok,
      %{
@@ -124,6 +128,19 @@ defmodule FeedService.Events.Schema do
   end
 
   defp response_attrs(_), do: {:error, :missing_fields}
+
+  # user.profile.updated carries "name"; user.avatar.updated carries "avatar_link".
+  # The other field will be nil — ProfileHandler skips nil fields on UPDATE.
+  defp profile_attrs(%{"user_id" => user_id} = p) do
+    {:ok,
+     %{
+       user_id: user_id,
+       name: p["name"],
+       avatar_url: p["avatar_link"]
+     }}
+  end
+
+  defp profile_attrs(_), do: {:error, :missing_fields}
 
   defp delete_attrs(id_key, %{} = p) do
     case p[id_key] do

@@ -19,8 +19,6 @@ defmodule FeedService.Events.Broadway do
 
   @handlers [ProjectHandler, ResponseHandler, ProfileHandler]
 
-  # TODO(upstream) profile_service: add "profile_service.profile.changed"
-  # once the producer exists in profile_service.
   @topics [
     "project.created",
     "project.updated",
@@ -31,7 +29,9 @@ defmodule FeedService.Events.Broadway do
     "task.updated",
     "task.deleted",
     "response_service.response.add",
-    "response_service.response.delete"
+    "response_service.response.delete",
+    # profile_service publishes user.profile.updated and user.avatar.updated here.
+    "user-events"
   ]
 
   def start_link(_opts) do
