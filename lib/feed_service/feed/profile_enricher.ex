@@ -57,7 +57,7 @@ defmodule FeedService.Feed.ProfileEnricher do
       {:ok, body} ->
         attrs = %{
           user_id: user_id,
-          name: body["name"],
+          name: body["name"] || body["first_name"],
           avatar_url: body["avatar_url"]
         }
 

@@ -37,6 +37,7 @@ defmodule FeedService.Feed.Projector do
       label: attrs[:label],
       short_description: attrs[:short_description],
       description: attrs[:description],
+      media_ids: attrs[:media_ids] || [],
       payload: attrs[:payload] || raw,
       occurred_at: attrs.occurred_at,
       event_id: build_event_id(source_type, verb, attrs)

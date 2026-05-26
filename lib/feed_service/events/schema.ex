@@ -77,18 +77,17 @@ defmodule FeedService.Events.Schema do
 
   defp project_attrs(_), do: {:error, :missing_fields}
 
-  # TODO(upstream) project_service: rename payload field `creator` → `creator_name`
-  # in send_create_post/send_update_post/send_create_task/send_update_task.
   defp post_attrs(%{"post_id" => pid, "project_id" => proj, "creator_id" => creator_id} = p) do
     {:ok,
      %{
        source_id: pid,
        project_id: proj,
        actor_id: creator_id,
-       actor_name: p["creator"] || p["creator_name"],
+       actor_name: p["creator_name"] || p["creator"],
        label: p["label"],
        short_description: p["short_description"],
        description: p["description"],
+       media_ids: p["media_ids"] || [],
        occurred_at: pick_time(p)
      }}
   end
@@ -101,10 +100,11 @@ defmodule FeedService.Events.Schema do
        source_id: tid,
        project_id: proj,
        actor_id: creator_id,
-       actor_name: p["creator"] || p["creator_name"],
+       actor_name: p["creator_name"] || p["creator"],
        label: p["label"],
        short_description: p["short_description"],
        description: p["description"],
+       media_ids: p["media_ids"] || [],
        occurred_at: pick_time(p)
      }}
   end

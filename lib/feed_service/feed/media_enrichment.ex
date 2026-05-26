@@ -63,6 +63,12 @@ defmodule FeedService.Feed.MediaEnrichment do
     end)
   end
 
+  # S2S response: {"asset": {...}, "download": {"url": "...", "expires_in": 300}}
+  # Extract download_url before stripping the wrapper.
+  defp normalize(%{"asset" => asset, "download" => %{"url" => url}}) when is_binary(url) do
+    asset |> normalize() |> Map.put("download_url", url)
+  end
+
   defp normalize(%{"asset" => asset}), do: normalize(asset)
 
   defp normalize(asset) when is_map(asset) do
