@@ -16,6 +16,14 @@ defmodule FeedService.Clients.ProjectClient do
     request(:get, "/project/#{project_id}/info")
   end
 
+  @doc """
+  Returns `{:ok, %{"scientist" => [...], "volunteer" => [...]}}` where each
+  item has at least a `"project_id"` field.
+  """
+  def get_user_memberships(user_id) when is_binary(user_id) do
+    request(:get, "/project/profile/#{user_id}")
+  end
+
   defp request(method, path) do
     config = Application.fetch_env!(:feed_service, :project_client)
 

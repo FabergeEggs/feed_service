@@ -19,12 +19,7 @@ defmodule FeedServiceWeb.Router do
     scope "/" do
       pipe_through :authenticated
 
-      get "/feed", FeedController, :index
       get "/feed/projects/:project_id", FeedController, :project_feed
-
-      get "/subscriptions", SubscriptionController, :index
-      post "/subscriptions", SubscriptionController, :create
-      delete "/subscriptions/:id", SubscriptionController, :delete
     end
   end
 

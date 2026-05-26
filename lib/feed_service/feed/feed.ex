@@ -4,55 +4,22 @@ defmodule FeedService.Feed do
   import Ecto.Query
 
   alias FeedService.Repo
-  alias FeedService.Feed.{FeedItem, Subscription, Membership, Profile, Cursor}
+  # Membership schema kept for upsert_membership/remove_membership
+  # (populated by Kafka if project_service adds member events later).
+  alias FeedService.Feed.{FeedItem, Membership, Profile, Cursor}
 
   @default_limit 20
   @max_limit 100
 
-  def list_user_timeline(user_id, opts \\ []) do
-    limit = clamp_limit(opts[:limit])
+  @doc """
+  Returns the global feed, newest first.
 
-    case Cursor.decode(opts[:cursor]) do
-      :error ->
-        {:error, :invalid_cursor}
-
-      {:ok, point} ->
-        items =
-          FeedItem
-          |> where(^user_timeline_where(user_id))
-          |> apply_cursor(point)
-          |> order_by([i], desc: i.occurred_at, desc: i.id)
-          |> limit(^limit)
-          |> Repo.all()
-
-        {:ok, %{items: items, next_cursor: next_cursor(items, limit)}}
-    end
-  end
-
-  defp user_timeline_where(user_id) do
-    project_subs =
-      from s in Subscription,
-        where: s.user_id == ^user_id and s.target_type == "project",
-        select: s.target_id
-
-    member_projects =
-      from m in Membership,
-        where: m.user_id == ^user_id,
-        select: m.project_id
-
-    user_subs =
-      from s in Subscription,
-        where: s.user_id == ^user_id and s.target_type == "user",
-        select: s.target_id
-
-    dynamic(
-      [i],
-      i.project_id in subquery(project_subs) or
-        i.project_id in subquery(member_projects) or
-        i.actor_id in subquery(user_subs)
-    )
-  end
-
+  Options:
+    - `:cursor`      — opaque pagination cursor
+    - `:limit`       — max items (default #{@default_limit}, max #{@max_limit})
+    - `:project_ids` — when present, restricts feed to those projects only
+                       (caller resolves user memberships via REST)
+  """
   def list_global_feed(opts \\ []) do
     limit = clamp_limit(opts[:limit])
 
@@ -63,6 +30,7 @@ defmodule FeedService.Feed do
       {:ok, point} ->
         items =
           FeedItem
+          |> filter_by_membership(opts[:project_ids])
           |> apply_cursor(point)
           |> order_by([i], desc: i.occurred_at, desc: i.id)
           |> limit(^limit)
@@ -70,6 +38,15 @@ defmodule FeedService.Feed do
 
         {:ok, %{items: items, next_cursor: next_cursor(items, limit)}}
     end
+  end
+
+  # No project_ids → unfiltered global feed.
+  defp filter_by_membership(query, nil), do: query
+  defp filter_by_membership(query, []), do: where(query, false)
+
+  # project_ids list → restrict feed to those projects only.
+  defp filter_by_membership(query, project_ids) when is_list(project_ids) do
+    where(query, [i], i.project_id in ^project_ids)
   end
 
   def list_project_feed(project_id, opts \\ []) do
@@ -117,48 +94,6 @@ defmodule FeedService.Feed do
 
   def get_item(id), do: Repo.get(FeedItem, id)
 
-  def subscribe(user_id, target_type, target_id) do
-    attrs = %{user_id: user_id, target_type: target_type, target_id: target_id}
-
-    case %Subscription{} |> Subscription.changeset(attrs) |> Repo.insert() do
-      {:ok, sub} ->
-        {:ok, sub}
-
-      {:error, changeset} ->
-        if duplicate_subscription?(changeset) do
-          {:ok, get_subscription(user_id, target_type, target_id)}
-        else
-          {:error, changeset}
-        end
-    end
-  end
-
-  def unsubscribe(user_id, target_type, target_id) do
-    Subscription
-    |> where(
-      [s],
-      s.user_id == ^user_id and s.target_type == ^target_type and s.target_id == ^target_id
-    )
-    |> Repo.delete_all()
-
-    :ok
-  end
-
-  def list_subscriptions(user_id) do
-    Subscription
-    |> where([s], s.user_id == ^user_id)
-    |> order_by([s], desc: s.inserted_at)
-    |> Repo.all()
-  end
-
-  def unsubscribe_by_id(user_id, subscription_id) do
-    Subscription
-    |> where([s], s.id == ^subscription_id and s.user_id == ^user_id)
-    |> Repo.delete_all()
-
-    :ok
-  end
-
   def upsert_membership(attrs) do
     %Membership{}
     |> Membership.changeset(attrs)
@@ -189,6 +124,26 @@ defmodule FeedService.Feed do
 
   def lookup_profile(user_id), do: Repo.get(Profile, user_id)
 
+  @doc """
+  Applies a partial update to an existing `profiles_cache` row.
+  Only updates fields present in `changes` (non-nil), so a name-only event
+  never overwrites `avatar_url` and vice versa.
+  Does nothing if the user is not yet in the cache — ProfileEnricher will
+  insert a full row on the next REST fetch.
+  """
+  def patch_cached_profile(user_id, changes)
+      when is_map(changes) and map_size(changes) > 0 do
+    set = Map.to_list(changes) ++ [updated_at: DateTime.utc_now()]
+
+    Profile
+    |> where([p], p.user_id == ^user_id)
+    |> Repo.update_all(set: set)
+
+    :ok
+  end
+
+  def patch_cached_profile(_user_id, _empty), do: :ok
+
   defp clamp_limit(nil), do: @default_limit
   defp clamp_limit(n) when is_integer(n) and n > 0, do: min(n, @max_limit)
   defp clamp_limit(_), do: @default_limit
@@ -216,19 +171,8 @@ defmodule FeedService.Feed do
     Cursor.encode({last.occurred_at, last.id})
   end
 
-  defp get_subscription(user_id, target_type, target_id) do
-    Repo.get_by(Subscription,
-      user_id: user_id,
-      target_type: target_type,
-      target_id: target_id
-    )
-  end
-
   defp duplicate_event?(%Ecto.Changeset{errors: errors}) do
     match?({_, [{:constraint, :unique} | _]}, errors[:event_id])
   end
 
-  defp duplicate_subscription?(%Ecto.Changeset{errors: errors}) do
-    match?({_, [{:constraint, :unique} | _]}, errors[:user_id])
-  end
 end
