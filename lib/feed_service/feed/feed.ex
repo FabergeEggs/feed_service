@@ -35,6 +35,7 @@ defmodule FeedService.Feed do
           |> order_by([i], desc: i.occurred_at, desc: i.id)
           |> limit(^limit)
           |> Repo.all()
+          |> enrich_avatars()
 
         {:ok, %{items: items, next_cursor: next_cursor(items, limit)}}
     end
@@ -64,6 +65,7 @@ defmodule FeedService.Feed do
           |> order_by([i], desc: i.occurred_at, desc: i.id)
           |> limit(^limit)
           |> Repo.all()
+          |> enrich_avatars()
 
         {:ok, %{items: items, next_cursor: next_cursor(items, limit)}}
     end
@@ -143,6 +145,51 @@ defmodule FeedService.Feed do
   end
 
   def patch_cached_profile(_user_id, _empty), do: :ok
+
+  # For items stored before profile enrichment worked, fill actor_avatar_url
+  # at read-time: first from profiles_cache, then lazy REST for any still missing.
+  defp enrich_avatars(items) do
+    missing_ids =
+      items
+      |> Enum.filter(&(&1.actor_id && is_nil(&1.actor_avatar_url)))
+      |> Enum.map(& &1.actor_id)
+      |> Enum.uniq()
+
+    if missing_ids == [] do
+      items
+    else
+      cached =
+        Profile
+        |> where([p], p.user_id in ^missing_ids)
+        |> select([p], {p.user_id, p.avatar_url})
+        |> Repo.all()
+        |> Map.new()
+
+      # Fetch profiles not yet in cache via REST (lazy warm-up)
+      still_missing = Enum.reject(missing_ids, &Map.has_key?(cached, &1))
+
+      fetched =
+        still_missing
+        |> Enum.map(fn user_id ->
+          case FeedService.Feed.ProfileEnricher.fetch_and_cache(user_id) do
+            %{avatar_url: url} when not is_nil(url) -> {user_id, url}
+            _ -> nil
+          end
+        end)
+        |> Enum.reject(&is_nil/1)
+        |> Map.new()
+
+      avatar_map = Map.merge(cached, fetched)
+
+      Enum.map(items, fn item ->
+        if item.actor_id && is_nil(item.actor_avatar_url) do
+          %{item | actor_avatar_url: avatar_map[item.actor_id]}
+        else
+          item
+        end
+      end)
+    end
+  end
 
   defp clamp_limit(nil), do: @default_limit
   defp clamp_limit(n) when is_integer(n) and n > 0, do: min(n, @max_limit)

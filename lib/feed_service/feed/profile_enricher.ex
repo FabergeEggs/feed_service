@@ -21,6 +21,11 @@ defmodule FeedService.Feed.ProfileEnricher do
     end
   end
 
+  @doc "Fetches a profile by user_id (REST + upsert to cache). Returns %{name, avatar_url} or nil."
+  def fetch_and_cache(user_id) when is_binary(user_id) do
+    maybe_fetch(user_id)
+  end
+
   defp apply_profile(attrs, nil), do: attrs
 
   defp apply_profile(attrs, %{name: name, avatar_url: avatar_url}) do

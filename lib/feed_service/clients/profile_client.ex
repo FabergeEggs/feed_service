@@ -13,7 +13,7 @@ defmodule FeedService.Clients.ProfileClient do
 
   require Logger
 
-  @profile_path "/profile/{id}"
+  @profile_path "/internal/profile/{id}"
 
   @impl true
   def get_profile(user_id) when is_binary(user_id) do
