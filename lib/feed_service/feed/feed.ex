@@ -162,7 +162,15 @@ defmodule FeedService.Feed do
         |> Map.new()
 
       # Fetch profiles not yet in cache via REST (lazy warm-up)
-      still_missing = Enum.reject(actor_ids, &Map.has_key?(cached, &1))
+      # Re-fetch if not in cache OR in cache with null avatar_url.
+      # Handles the case where a Kafka avatar event was missed (offset_reset_policy: :latest
+      # means events published while feed_service was down are permanently skipped).
+      still_missing = Enum.reject(actor_ids, fn id ->
+        case Map.get(cached, id) do
+          url when is_binary(url) and url != "" -> true
+          _ -> false
+        end
+      end)
 
       fetched =
         still_missing
