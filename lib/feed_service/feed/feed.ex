@@ -72,17 +72,13 @@ defmodule FeedService.Feed do
   end
 
   def upsert_item(attrs) do
-    case %FeedItem{} |> FeedItem.changeset(attrs) |> Repo.insert() do
-      {:ok, item} ->
-        {:ok, item}
-
-      {:error, changeset} ->
-        if duplicate_event?(changeset) do
-          {:ok, :duplicate}
-        else
-          {:error, changeset}
-        end
-    end
+    %FeedItem{}
+    |> FeedItem.changeset(attrs)
+    |> Repo.insert(
+      on_conflict: {:replace_all_except, [:id, :inserted_at]},
+      conflict_target: [:source_type, :source_id],
+      returning: true
+    )
   end
 
   def delete_by_source(source_type, source_id) do
@@ -146,27 +142,27 @@ defmodule FeedService.Feed do
 
   def patch_cached_profile(_user_id, _empty), do: :ok
 
-  # For items stored before profile enrichment worked, fill actor_avatar_url
-  # at read-time: first from profiles_cache, then lazy REST for any still missing.
+  # Always resolve actor_avatar_url from profiles_cache so that avatar changes
+  # propagate to existing feed items on the next read.
   defp enrich_avatars(items) do
-    missing_ids =
+    actor_ids =
       items
-      |> Enum.filter(&(&1.actor_id && is_nil(&1.actor_avatar_url)))
+      |> Enum.filter(&(&1.actor_id))
       |> Enum.map(& &1.actor_id)
       |> Enum.uniq()
 
-    if missing_ids == [] do
+    if actor_ids == [] do
       items
     else
       cached =
         Profile
-        |> where([p], p.user_id in ^missing_ids)
+        |> where([p], p.user_id in ^actor_ids)
         |> select([p], {p.user_id, p.avatar_url})
         |> Repo.all()
         |> Map.new()
 
       # Fetch profiles not yet in cache via REST (lazy warm-up)
-      still_missing = Enum.reject(missing_ids, &Map.has_key?(cached, &1))
+      still_missing = Enum.reject(actor_ids, &Map.has_key?(cached, &1))
 
       fetched =
         still_missing
@@ -182,8 +178,8 @@ defmodule FeedService.Feed do
       avatar_map = Map.merge(cached, fetched)
 
       Enum.map(items, fn item ->
-        if item.actor_id && is_nil(item.actor_avatar_url) do
-          %{item | actor_avatar_url: avatar_map[item.actor_id]}
+        if item.actor_id do
+          %{item | actor_avatar_url: Map.get(avatar_map, item.actor_id)}
         else
           item
         end
@@ -216,10 +212,6 @@ defmodule FeedService.Feed do
   defp next_cursor(items, _limit) do
     last = List.last(items)
     Cursor.encode({last.occurred_at, last.id})
-  end
-
-  defp duplicate_event?(%Ecto.Changeset{errors: errors}) do
-    match?({_, [{:constraint, :unique} | _]}, errors[:event_id])
   end
 
 end
