@@ -5,7 +5,7 @@ defmodule FeedServiceWeb.Api.V1.FeedController do
   alias FeedService.Feed.MediaEnrichment
   alias FeedService.Clients.ProjectClient
 
-  @cache_ttl 30
+  @cache_ttl 5
   @memberships_ttl 60
 
   def global_feed(conn, params) do
