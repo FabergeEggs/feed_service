@@ -111,14 +111,11 @@ defmodule FeedService.Events.Schema do
 
   defp task_attrs(_), do: {:error, :missing_fields}
 
-  # TODO(upstream) response_service: include `project_id` in payload of
-  # response.add/delete. Without it response items can't be filtered into
-  # project-scoped feeds.
   defp response_attrs(%{"response_id" => rid, "task_id" => tid} = p) do
     {:ok,
      %{
        source_id: rid,
-       project_id: nil,
+       project_id: p["project_id"],
        actor_id: p["user_id"],
        actor_name: nil,
        label: nil,
