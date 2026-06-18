@@ -1,19 +1,10 @@
 defmodule FeedService.Feed.ProfileEnricher do
-  @moduledoc """
-  Fills `actor_name` / `actor_avatar_url` on event attrs from
-  `profiles_cache`, lazily fetching missing profiles via REST.
-
-  Storm guard: a failed fetch sets a 5-minute Redis flag so a flapping
-  profile_service doesn't get hammered on every Kafka event.
-  """
-
   alias FeedService.Cache
   alias FeedService.Feed
   alias FeedService.Feed.Profile
 
   @fail_ttl 300
 
-  @doc "Returns the same attrs map, possibly with actor_name / actor_avatar_url filled in."
   def enrich_actor(attrs) do
     case attrs[:actor_id] do
       id when is_binary(id) -> apply_profile(attrs, lookup_or_fetch(id))
@@ -21,7 +12,6 @@ defmodule FeedService.Feed.ProfileEnricher do
     end
   end
 
-  @doc "Fetches a profile by user_id (REST + upsert to cache). Returns %{name, avatar_url} or nil."
   def fetch_and_cache(user_id) when is_binary(user_id) do
     maybe_fetch(user_id)
   end

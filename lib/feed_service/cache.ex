@@ -1,6 +1,4 @@
 defmodule FeedService.Cache do
-  @moduledoc "Redix-backed cache. ETF serialization. Errors return `{:error, _}` — callers degrade gracefully."
-
   @conn FeedService.Redix
 
   @type key :: String.t()

@@ -1,9 +1,4 @@
 defmodule FeedService.Events.Schema do
-  @moduledoc """
-  Decodes raw Kafka messages into a uniform internal struct. Routing is by
-  topic name, not by payload `type` (latter is buggy upstream).
-  """
-
   defstruct [:kind, :attrs, :raw]
 
   @type kind ::
@@ -47,9 +42,6 @@ defmodule FeedService.Events.Schema do
   defp decode_topic("response_service.response.delete", p),
     do: build(:response_deleted, p, &response_attrs/1)
 
-  # profile_service publishes both user.profile.updated {user_id, name} and
-  # user.avatar.updated {user_id, avatar_link} to the same topic.
-  # Both map to :profile_changed — handler does the partial-update logic.
   defp decode_topic("user-events", p), do: build(:profile_changed, p, &profile_attrs/1)
 
   defp decode_topic(_, _), do: {:error, :unknown_topic}
@@ -126,8 +118,6 @@ defmodule FeedService.Events.Schema do
 
   defp response_attrs(_), do: {:error, :missing_fields}
 
-  # user.profile.updated carries "name"; user.avatar.updated carries "avatar_link".
-  # The other field will be nil — ProfileHandler skips nil fields on UPDATE.
   defp profile_attrs(%{"user_id" => user_id} = p) do
     {:ok,
      %{

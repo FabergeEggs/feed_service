@@ -1,9 +1,4 @@
 defmodule FeedService.Events.Broadway do
-  @moduledoc """
-  Kafka consumer pipeline. Returns `:ignore` from `start_link/1` when
-  no brokers are configured, so REST keeps working without RedPanda.
-  """
-
   use Broadway
 
   require Logger
@@ -30,7 +25,6 @@ defmodule FeedService.Events.Broadway do
     "task.deleted",
     "response_service.response.add",
     "response_service.response.delete",
-    # profile_service publishes user.profile.updated and user.avatar.updated here.
     "user-events"
   ]
 
@@ -77,8 +71,6 @@ defmodule FeedService.Events.Broadway do
         end
 
       {:error, reason} ->
-        # Skip poison messages (ack without retry) — otherwise one bad
-        # payload blocks the partition forever.
         Logger.warning("decode failed: topic=#{topic} reason=#{inspect(reason)}")
         msg
     end

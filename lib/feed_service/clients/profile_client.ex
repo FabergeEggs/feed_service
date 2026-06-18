@@ -1,14 +1,4 @@
 defmodule FeedService.Clients.ProfileClient do
-  @moduledoc """
-  REST client for profile_service. Used for lazy `profiles_cache` fills.
-
-  REST client for the lazy `profiles_cache` fill-on-miss path.
-
-  TODO(upstream) profile_service: add Kafka producer for `profile.changed`
-  so ProfileHandler can consume it instead of this REST fallback.
-  Same S2S sentinel-headers caveat as ProjectClient.
-  """
-
   @behaviour FeedService.Clients.ProfileClient.Behaviour
 
   require Logger

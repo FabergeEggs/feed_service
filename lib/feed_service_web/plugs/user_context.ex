@@ -1,6 +1,4 @@
 defmodule FeedServiceWeb.Plugs.UserContext do
-  @moduledoc "Reads X-User-* headers (set by gateway) into `conn.assigns.current_user`."
-
   @behaviour Plug
 
   import Plug.Conn

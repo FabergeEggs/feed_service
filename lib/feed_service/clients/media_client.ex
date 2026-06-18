@@ -1,6 +1,4 @@
 defmodule FeedService.Clients.MediaClient do
-  @moduledoc "S2S client for media_service. `X-Service-Token` from `:media_client` config."
-
   require Logger
 
   def get_asset(asset_id) when is_binary(asset_id) do

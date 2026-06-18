@@ -9,9 +9,7 @@ defmodule FeedService.Events.Handlers.ProjectHandler do
 
   def handles?(%Schema{kind: kind}), do: kind in @kinds
 
-  # TODO(upstream) project_service: publish member.added/member.removed events
-  # so we can populate `memberships` from Kafka. Until then it stays empty
-  # or we'd need a REST pull on project.created.
+  # TODO(member-events)
   def handle(%Schema{kind: kind} = event) when kind in @kinds do
     case Projector.project(event) do
       {:upsert, attrs} ->

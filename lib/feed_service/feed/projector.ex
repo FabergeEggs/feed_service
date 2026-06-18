@@ -1,6 +1,4 @@
 defmodule FeedService.Feed.Projector do
-  @moduledoc "Pure transform: `Schema` event → `{:upsert, attrs} | {:delete, source_type, source_id}`."
-
   alias FeedService.Events.Schema
 
   @spec project(Schema.t()) ::

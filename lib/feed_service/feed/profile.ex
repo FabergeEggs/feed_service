@@ -1,6 +1,4 @@
 defmodule FeedService.Feed.Profile do
-  @moduledoc "Denormalized cache of upstream profile data (name, avatar)."
-
   use Ecto.Schema
 
   import Ecto.Changeset

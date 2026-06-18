@@ -1,6 +1,4 @@
 defmodule FeedService.Release do
-  @moduledoc "Mix-less helpers for compiled releases. Used by the docker entrypoint."
-
   @app :feed_service
 
   def migrate do

@@ -1,19 +1,10 @@
 defmodule FeedService.Feed.MediaEnrichment do
-  @moduledoc """
-  Resolves `feed_item.media_ids` into compact metadata via media_service,
-  with a per-asset Redis cache. Errors degrade silently — feed responses
-  never fail because media is unreachable.
-  """
-
   alias FeedService.Cache
   alias FeedService.Clients.MediaClient
   alias FeedService.Feed.FeedItem
 
   @cache_ttl 300
 
-  @doc """
-  Returns `%{asset_id => meta | nil}` for every id referenced in `items`.
-  """
   @spec for_items([FeedItem.t()]) :: %{String.t() => map() | nil}
   def for_items(items) when is_list(items) do
     items
@@ -63,8 +54,6 @@ defmodule FeedService.Feed.MediaEnrichment do
     end)
   end
 
-  # S2S response: {"asset": {...}, "download": {"url": "...", "expires_in": 300}}
-  # Extract download_url before stripping the wrapper.
   defp normalize(%{"asset" => asset, "download" => %{"url" => url}}) when is_binary(url) do
     asset |> normalize() |> Map.put("download_url", url)
   end

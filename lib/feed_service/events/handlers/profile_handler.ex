@@ -1,17 +1,4 @@
 defmodule FeedService.Events.Handlers.ProfileHandler do
-  @moduledoc """
-  Keeps `profiles_cache` fresh from profile_service Kafka events.
-
-  profile_service publishes two event types to the `user-events` topic:
-    - user.profile.updated  → {user_id, name}
-    - user.avatar.updated   → {user_id, avatar_link}
-
-  Each event carries only one changed field. We do a partial UPDATE so a
-  name-only event never wipes out a cached avatar_url, and vice versa.
-  If the user isn't in the cache yet, the UPDATE is a no-op — ProfileEnricher
-  will insert a fresh full row on the next REST fetch.
-  """
-
   alias FeedService.Events.Schema
   alias FeedService.Feed
 

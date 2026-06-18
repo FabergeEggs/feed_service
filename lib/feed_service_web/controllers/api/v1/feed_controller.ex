@@ -25,9 +25,6 @@ defmodule FeedServiceWeb.Api.V1.FeedController do
     serve_page(conn, key, fn -> Feed.list_global_feed(opts) end)
   end
 
-  # Fetch the list of project IDs the user is a member of.
-  # Result is cached in Redis for @memberships_ttl seconds to avoid
-  # hitting project_service on every feed request.
   defp resolve_project_ids(user_id) do
     cache_key = "memberships:#{user_id}"
 
@@ -48,7 +45,6 @@ defmodule FeedServiceWeb.Api.V1.FeedController do
             ids
 
           {:error, _} ->
-            # project_service unavailable — degrade to unfiltered feed
             nil
         end
     end

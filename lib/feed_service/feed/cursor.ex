@@ -1,6 +1,4 @@
 defmodule FeedService.Feed.Cursor do
-  @moduledoc "Opaque keyset cursor encoding `{occurred_at, id}` as URL-safe base64."
-
   @type t :: String.t()
   @type point :: {DateTime.t(), Ecto.UUID.t()}
 

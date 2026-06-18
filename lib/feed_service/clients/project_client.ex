@@ -1,14 +1,5 @@
 defmodule FeedService.Clients.ProjectClient do
-  @moduledoc """
-  REST client for project_service.
-
-  TODO(upstream) project_service: add S2S auth via `X-Service-Token` (pattern
-  exists in media_service). Until then we send sentinel `X-User-Id`/`X-Username`.
-
-  TODO(upstream) project_service: add `GET /task/{task_id}` (without project_id
-  in path) so we can resolve project_id for response events; or response_service
-  publishes project_id in Kafka.
-  """
+  # TODO(s2s-auth)
 
   require Logger
 
@@ -16,10 +7,6 @@ defmodule FeedService.Clients.ProjectClient do
     request(:get, "/project/#{project_id}/info")
   end
 
-  @doc """
-  Returns `{:ok, %{"scientist" => [...], "volunteer" => [...]}}` where each
-  item has at least a `"project_id"` field.
-  """
   def get_user_memberships(user_id) when is_binary(user_id) do
     request(:get, "/project/profile/#{user_id}")
   end
